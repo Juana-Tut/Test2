@@ -5,9 +5,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -20,10 +22,11 @@ func handleConnection(conn net.Conn) {
 		conn.Close()
 	}() // Close the connection when the function returns
 
-	buf := make([]byte, 1024) // Buffer to hold incoming data
+	//buf := make([]byte, 1024) // Buffer to hold incoming data
+	reader := bufio.NewReader(conn) // Create a buffered reader for the connection
 
 	for {
-		n, err := conn.Read(buf)
+		input, err := reader.ReadString('\n') // Read until a new line from the client
 		if err != nil {
 			if err == io.EOF {
                 // Client closed the connection
@@ -34,10 +37,14 @@ func handleConnection(conn net.Conn) {
             }
 			return
 		}
+		//Trim the input to remove any leading or trailing whitespace
+		cleanInput := strings.TrimSpace(input)
+
 		// Echo the message back to the client
-		_, err = conn.Write(buf[:n])
+		_, err = conn.Write([]byte(cleanInput + "\n")) // Send the cleaned input back to the client
 		if err != nil {
-   		fmt.Println("Error writing to client:", err)
+			fmt.Printf("[%s] Error writing to client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
+			return
 		}
 	} 
 }
