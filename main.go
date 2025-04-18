@@ -9,20 +9,30 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 	"time"
 )
 
 func handleConnection(conn net.Conn) {
 	clientAddr := conn.RemoteAddr().String()
+	clientIP := strings.Split(clientAddr, ":")[0] // Extract the client IP address
 	fmt.Printf("[%s] Client connected: %s\n", time.Now().Format(time.RFC3339), clientAddr)
 	
 	defer func() {
 		fmt.Printf("[%s] Client disconnected: %s\n", time.Now().Format(time.RFC3339), clientAddr)
 		conn.Close()
 	}() // Close the connection when the function returns
+	
+	// Open or create a log file for the client 
+	logFileName := fmt.Sprintf("%s.log", clientIP)
+	logFile, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("[%s] Error opening log file for client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
+		return
+	}
+	defer logFile.Close() // Ensure the log file is closed when done
 
-	//buf := make([]byte, 1024) // Buffer to hold incoming data
 	reader := bufio.NewReader(conn) // Create a buffered reader for the connection
 
 	for {
@@ -39,6 +49,13 @@ func handleConnection(conn net.Conn) {
 		}
 		//Trim the input to remove any leading or trailing whitespace
 		cleanInput := strings.TrimSpace(input)
+
+		// Log the message to the client's log file
+		logMessage := fmt.Sprintf("[%s] %s:%s\n", time.Now().Format(time.RFC3339), clientAddr, cleanInput)
+		if _, err := logFile.WriteString(logMessage); err != nil { 
+			fmt.Printf("[%s] Error writing to log file for client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
+			return
+		}
 
 		// Echo the message back to the client
 		_, err = conn.Write([]byte(cleanInput + "\n")) // Send the cleaned input back to the client
