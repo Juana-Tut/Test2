@@ -81,8 +81,24 @@ func handleConnection(conn net.Conn) {
             return
         }
 
+		var response string
+		switch cleanInput {
+		case "hello":
+			response = "Hi there!"
+		case "":
+			response = "Say something..."
+		case "bye":
+			response = "Goodbye!"
+			_, _ = conn.Write([]byte(response + "\n")) // Send the response back to the client
+			fmt.Printf("[%s] Client %s said 'bye', disconnected now\n", time.Now().Format(time.RFC3339), clientAddr)
+			return
+		default:
+			response = cleanInput
+			
+		}
+
 		// Echo the message back to the client
-		_, err = conn.Write([]byte(cleanInput + "\n")) // Send the cleaned input back to the client
+		_, err = conn.Write([]byte(response + "\n")) // Send the cleaned input back to the client
 		if err != nil {
 			fmt.Printf("[%s] Error writing to client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
 			return
