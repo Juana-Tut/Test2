@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"time"
 )
@@ -24,7 +25,13 @@ func handleConnection(conn net.Conn) {
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			fmt.Printf("[%s] Error reading from client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
+			if err == io.EOF {
+                // Client closed the connection
+                fmt.Printf("[%s] Client %s closed the connection\n", time.Now().Format(time.RFC3339), clientAddr)
+            } else {
+                // Handle other errors gracefully
+                fmt.Printf("[%s] Error reading from client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
+            }
 			return
 		}
 		// Echo the message back to the client
