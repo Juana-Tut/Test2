@@ -80,21 +80,54 @@ func handleConnection(conn net.Conn) {
             fmt.Printf("[%s] Error writing to log file for client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
             return
         }
-
 		var response string
-		switch cleanInput {
-		case "hello":
-			response = "Hi there!"
-		case "":
-			response = "Say something..."
-		case "bye":
-			response = "Goodbye!"
-			_, _ = conn.Write([]byte(response + "\n")) // Send the response back to the client
-			fmt.Printf("[%s] Client %s said 'bye', disconnected now\n", time.Now().Format(time.RFC3339), clientAddr)
-			return
-		default:
-			response = cleanInput
-			
+		
+		// Handle commands
+        if strings.HasPrefix(cleanInput, "/") {
+            // Split the command and arguments
+            parts := strings.SplitN(cleanInput, " ", 2)
+            command := parts[0]
+            var argument string
+            if len(parts) > 1 {
+                argument = parts[1]
+            }
+
+            switch command {
+            case "/time":
+                // Respond with the current server time
+                currentTime := time.Now().Format(time.RFC3339)
+                conn.Write([]byte("Server time: " + currentTime + "\n"))
+
+            case "/quit":
+                // Close the connection
+                conn.Write([]byte("Goodbye!\n"))
+                return
+
+            case "/echo":
+                // Echo back the provided message
+                conn.Write([]byte(argument + "\n"))
+
+            default:
+                // Unknown command
+                conn.Write([]byte("Unknown command\n"))
+            }
+        } else {
+		
+			switch cleanInput {
+			case "hello":
+				response = "Hi there!"
+			case "":
+				response = "Say something..."
+			case "bye":
+				response = "Goodbye!"
+				_, _ = conn.Write([]byte(response + "\n")) // Send the response back to the client
+				fmt.Printf("[%s] Client %s said 'bye', disconnected now\n", time.Now().Format(time.RFC3339), clientAddr)
+				return
+			default:
+				response = cleanInput
+				
+			}
+
 		}
 
 		// Echo the message back to the client
