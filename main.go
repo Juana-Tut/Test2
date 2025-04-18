@@ -15,6 +15,7 @@ import (
 	"time"
 )
 const inactivityTimeout = 30 * time.Second // Define the inactivity timeout
+const maxMessageLength int= 1024 // Define the maximum message length
 
 func handleConnection(conn net.Conn) {
 	clientAddr := conn.RemoteAddr().String()
@@ -57,12 +58,28 @@ func handleConnection(conn net.Conn) {
 		//Trim the input to remove any leading or trailing whitespace
 		cleanInput := strings.TrimSpace(input)
 
-		// Log the message to the client's log file
-		logMessage := fmt.Sprintf("[%s] %s:%s\n", time.Now().Format(time.RFC3339), clientAddr, cleanInput)
-		if _, err := logFile.WriteString(logMessage); err != nil { 
-			fmt.Printf("[%s] Error writing to log file for client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
-			return
+		//Handle long messages
+		if len(cleanInput) > maxMessageLength{
+			// Reject or truncate the message
+			truncateMessage := cleanInput[:maxMessageLength]
+			rejectionMessage := fmt.Sprintf("Message too long. Truncated to: %s\n", truncateMessage)
+			conn.Write([]byte(rejectionMessage)) // Send rejection message to the client
+		
+
+			// Log the truncated message to the client's log file
+			logMessage := fmt.Sprintf("[%s] %s:%s\n", time.Now().Format(time.RFC3339), clientAddr, truncateMessage)
+			if _, err := logFile.WriteString(logMessage); err != nil { 
+				fmt.Printf("[%s] Error writing to log file for client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
+				return
+			}
 		}
+
+		// Log the message to the client's log file
+        logMessage := fmt.Sprintf("[%s] %s\n", time.Now().Format(time.RFC3339), cleanInput)
+        if _, err := logFile.WriteString(logMessage); err != nil {
+            fmt.Printf("[%s] Error writing to log file for client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
+            return
+        }
 
 		// Echo the message back to the client
 		_, err = conn.Write([]byte(cleanInput + "\n")) // Send the cleaned input back to the client
