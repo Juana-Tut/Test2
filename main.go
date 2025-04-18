@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 )
+const inactivityTimeout = 30 * time.Second // Define the inactivity timeout
 
 func handleConnection(conn net.Conn) {
 	clientAddr := conn.RemoteAddr().String()
@@ -37,12 +38,17 @@ func handleConnection(conn net.Conn) {
 	reader := bufio.NewReader(conn) // Create a buffered reader for the connection
 
 	for {
+		
+		conn.SetDeadline(time.Now().Add(inactivityTimeout)) // Set a deadline for inactivity
 		input, err := reader.ReadString('\n') // Read until a new line from the client
 		if err != nil {
 			if err == io.EOF {
                 // Client closed the connection
                 fmt.Printf("[%s] Client %s closed the connection\n", time.Now().Format(time.RFC3339), clientAddr)
-            } else {
+            } else if os.IsTimeout(err) {
+				// Inactivity timeout occurred
+                fmt.Printf("[%s] Client %s disconnected due to inactivity\n", time.Now().Format(time.RFC3339), clientAddr)
+			}else {
                 // Handle other errors gracefully
                 fmt.Printf("[%s] Error reading from client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
             }
