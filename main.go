@@ -7,16 +7,24 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
-	buf := make([]byte, 1024)
+	clientAddr := conn.RemoteAddr().String()
+	fmt.Printf("[%s] Client connected: %s\n", time.Now().Format(time.RFC3339), clientAddr)
+	
+	defer func() {
+		fmt.Printf("[%s] Client disconnected: %s\n", time.Now().Format(time.RFC3339), clientAddr)
+		conn.Close()
+	}() // Close the connection when the function returns
+
+	buf := make([]byte, 1024) // Buffer to hold incoming data
 
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			fmt.Println("Error reading from client:", err)
+			fmt.Printf("[%s] Error reading from client %s: %v\n", time.Now().Format(time.RFC3339), clientAddr, err)
 			return
 		}
 		// Echo the message back to the client
@@ -35,15 +43,17 @@ func main() {
 	}
     defer listener.Close()
 	fmt.Println("Server listening on :4000")
+
 	// Our program runs an infinite loop
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				fmt.Println("Error accepting:", err)
-				continue
-			}
-			handleConnection(conn)
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Printf("[%s] Error accepting: %v\n", time.Now().Format(time.RFC3339),err)
+			continue
 		}
+
+		go handleConnection(conn) // Handle the connection in a separate goroutine
+	} 
 }
 
 	
