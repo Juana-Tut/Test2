@@ -19,7 +19,7 @@
   - Send messages and they will be logged to a file named after the client's IP address followed by .log
 
 ## Link to video 
-()
+(https://youtu.be/-ga-UXoRDDU)
 
 ## Educationally Enriching Functionality
 The most educationally enriching functionality was implementing the **per-client logging system**. It required understanding how to handle concurrent connections, manage file I/O efficiently, and ensure thread safety when multiple clients are connected.
